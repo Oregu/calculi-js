@@ -1,0 +1,17 @@
+{
+  "name": "lambda-calculus",
+  "version": "0.0.1",
+  "description": "Parsing and executing lambda calculus expressions.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Oregu/js-lambda-calculus.git"
+  },
+  "scripts": {
+    "run": "node calculus.es6",
+    "build": "node_modules\\.bin\\babel calculus.es6 -o calculus.js"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.2.x"
+  }
+}
