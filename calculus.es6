@@ -72,84 +72,98 @@ function tokenize(expr) {
  *            | ε
  */
 
-function expect(lexems, token) {
-  var next = lexems.next(), expr;
-  console.log('expecting', token);
-  if (next.done || !next.value[token])
-    throw `Expected ${token}, got ${printVal(next)}.`;
-}
-
-function parseLambda(lexems) {
-  console.log('parseLambda');
-  var next = lexems.next(), arg, body;
-  if (next.done || !next.value.identifier)
-    throw `Expected identifier, got ${printVal(next)}.`;
-
-  arg = next.value.identifier;
-  expect(lexems, 'dot');
-  body = parseExpr(lexems);
-  return ['λ', arg, body];
-}
-
-function parseBraces(lexems) {
-  console.log('parseBraces');
-  var expr = parseExpr(lexems),
-      exprs = parseExprs(lexems);
-  console.log('parse braces', expr, exprs, [expr].concat(exprs));
-  return [expr].concat(exprs);
-}
-
-function parseExprs(lexems) {
-  console.log('parseExprs');
-  var exprs = [], next;
-  do {
-    next = lexems.next()
-    if (next.done) {
-      throw 'Unexpected EOF, expected closing brace.';
-    }
-    if (next.value.closingBrace) {
-      break;
-    }
-    if (next.value.space) {
-      continue;
-    }
-    exprs.push(parseExpr(lexems, next));
-  } while(true);
-
-  return exprs;
-}
-
-function parseExpr(lexems, next) {
-  console.log('parseExpression');
-  next = next || lexems.next();
-  if (next.done) return;
-
-  if (next.value.lambda) {
-    return parseLambda(lexems);
+function skipSpaces(tokens, current) {
+  while (current !== tokens.length && tokens[current].space) {
+    current++;
   }
-  if (next.value.openingBrace) {
-    var braces = parseBraces(lexems);
-    console.log('braces got', braces);
-    return braces;
-  }
-  if (next.value.identifier) {
-    return next.value.identifier;
-  }
+  return current;
+}
+
+function expect(tokens, current, expected) {
+  var next = tokens[current], expr;
+  console.log('expecting', expected);
+  if (!next[expected])
+    throw `Expected ${expected}, got ${printVal(next)}.`;
 }
 
 function parse(expr) {
-  var lex = lexems(expr),
-      ast = parseExpr(lex),
-      next = lex.next();
-  if (!next.done) {
-    throw `Unexpected symbol: ${printVal(next)}`;
+  var tokens = tokenize(expr);
+      current = 0;
+
+  function parseLambda() {
+    console.log('parseLambda', current);
+
+    expect(tokens, current++, 'lambda');
+
+    var arg = tokens[current], body;
+
+    if (!arg.identifier)
+      throw `Expected identifier, got ${printVal(arg)}.`;
+
+    expect(tokens, ++current, 'dot');
+
+    body = parseExpr(tokens, ++current);
+    return ['λ', arg.identifier, body];
   }
-  return ast;
+
+  function parseBraces() {
+    console.log('parseBraces', current);
+
+    expect(tokens, current++, 'openingBrace');
+
+    var expr = parseExpr(),
+        exprs = parseExprs();
+
+    // console.log('parse braces', expr, exprs, [expr].concat(exprs));
+    return [expr].concat(exprs);
+  }
+
+  function parseExprs() {
+    console.log('parseExprs', current);
+
+    var exprs = [], next;
+    do {
+      if (current === tokens.length) {
+        throw 'Unexpected EOF, expected closing brace.';
+      }
+
+      next = tokens[++current];
+
+      if (next.closingBrace) {
+        break;
+      }
+
+      exprs.push(parseExpr());
+    } while(true);
+
+    return exprs;
+  }
+
+  function parseExpr() {
+    console.log('parseExpr', current);
+
+    if (current === tokens.length) return;
+
+    current = skipSpaces(tokens, current);
+    var token = tokens[current];
+
+    if (token.lambda) {
+      return parseLambda();
+    }
+    if (token.openingBrace) {
+      return parseBraces();
+    }
+    if (token.identifier) {
+      return token.identifier;
+    }
+  }
+
+  return parseExpr();
 }
 
 function test(expr) {
   try {
-    var ast = tokenize(expr);
+    var ast = parse(expr);
     console.log('\t', expr);
     console.log(util.inspect(ast, {depth: null}), '\n');
   } catch (err) {
@@ -157,14 +171,14 @@ function test(expr) {
   }
 }
 
-test('λx.x')
-test('λx.(λy.(y y) x x)')
-test('λs.λz.(s(z))');
+// test('λx.x')
+// test('λx.(λy.(y y) x x)')
+// test('λs.λz.(s(z))');
+// test('λy.(y y)');  
 test('λs.λz.(s(s(z)))');
-test('λsλz.s(z)');
-test('λsz.s(z)');
-test('λy.(y y)');
-test('λy.y.y');
+// test('λsλz.s(z)'); // TODO: legit, need to support
+// test('λsz.s(z)');  // TODO: maybe, if agree to use single letter vars
+// test('λy.y.y');    // TODO: Should fail
 
 exports.tokenize = tokenize;
 exports.parse = parse;
