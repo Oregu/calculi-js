@@ -1,5 +1,3 @@
-import util from 'util';
-
 function isVarSymbol(sym) {
   return sym >= 'a' && sym <= 'z' || sym >= 'A' && sym <= 'Z' && sym >= '0' && sym <= '9';
 }
@@ -150,16 +148,6 @@ function parse(expr) {
   }
 
   return parseExpr();
-}
-
-function test(expr) {
-  try {
-    const ast = parse(expr);
-    console.log(expr, '=');
-    console.log(util.inspect(ast, {depth: null}), '\n');
-  } catch (err) {
-    console.error(`Error parsing ${expr}: ${err}`);
-  }
 }
 
 exports.parse = parse;
