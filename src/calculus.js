@@ -1,4 +1,4 @@
-var util = require("util");
+import util from 'util';
 
 function isVarSymbol(sym) {
   return sym >= 'a' && sym <= 'z' || sym >= 'A' && sym <= 'Z' && sym >= '0' && sym <= '9';
@@ -81,18 +81,15 @@ function skipSpaces(tokens, current) {
 
 function expect(tokens, current, expected) {
   var next = tokens[current], expr;
-  console.log('expecting', expected);
   if (!next[expected])
     throw `Expected ${expected}, got ${printVal(next)}.`;
 }
 
 function parse(expr) {
-  var tokens = tokenize(expr);
+  let tokens = tokenize(expr),
       current = 0;
 
   function parseLambda() {
-    console.log('parseLambda', current);
-
     expect(tokens, current++, 'lambda');
 
     var arg = tokens[current], body;
@@ -107,20 +104,16 @@ function parse(expr) {
   }
 
   function parseBraces() {
-    console.log('parseBraces', current);
-
     expect(tokens, current++, 'openingBrace');
 
-    var expr = parseExpr(),
-        exprs = parseExprs();
+    const expr = parseExpr(),
+          exprs = parseExprs();
 
     // console.log('parse braces', expr, exprs, [expr].concat(exprs));
     return [expr].concat(exprs);
   }
 
   function parseExprs() {
-    console.log('parseExprs', current);
-
     var exprs = [], next;
     do {
       if (current === tokens.length) {
@@ -140,12 +133,10 @@ function parse(expr) {
   }
 
   function parseExpr() {
-    console.log('parseExpr', current);
-
     if (current === tokens.length) return;
 
     current = skipSpaces(tokens, current);
-    var token = tokens[current];
+    const token = tokens[current];
 
     if (token.lambda) {
       return parseLambda();
@@ -163,22 +154,12 @@ function parse(expr) {
 
 function test(expr) {
   try {
-    var ast = parse(expr);
-    console.log('\t', expr);
+    const ast = parse(expr);
+    console.log(expr, '=');
     console.log(util.inspect(ast, {depth: null}), '\n');
   } catch (err) {
     console.error(`Error parsing ${expr}: ${err}`);
   }
 }
 
-// test('λx.x')
-// test('λx.(λy.(y y) x x)')
-// test('λs.λz.(s(z))');
-// test('λy.(y y)');  
-test('λs.λz.(s(s(z)))');
-// test('λsλz.s(z)'); // TODO: legit, need to support
-// test('λsz.s(z)');  // TODO: maybe, if agree to use single letter vars
-// test('λy.y.y');    // TODO: Should fail
-
-exports.tokenize = tokenize;
 exports.parse = parse;
